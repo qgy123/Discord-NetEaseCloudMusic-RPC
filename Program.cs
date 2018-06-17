@@ -16,14 +16,16 @@ namespace NetEaseDcNpPlugin
         {
             //RegCallBack();
 
+            DiscordRpc.Initialize(Const.ApplicationId, ref _handlers, false, null);
+
             Timer timer = new Timer(1000);
-            timer.Elapsed += tick;
+            timer.Elapsed += Tick;
             timer.Start();
 
             Console.ReadLine();
         }
 
-        private static void tick(object sender, ElapsedEventArgs e)
+        private static void Tick(object sender, ElapsedEventArgs e)
         {
             Update();
         }
@@ -37,9 +39,7 @@ namespace NetEaseDcNpPlugin
 
         private static void Update()
         {
-            DiscordRpc.Initialize(Const.ApplicationId, ref _handlers, false, null);
-
-            string now = GetNetEaseNowPlaying(GetNetEaseProcessId());
+            string now = GetNetEaseNowPlaying();
 
             if (!string.IsNullOrWhiteSpace(now))
             {
@@ -55,43 +55,34 @@ namespace NetEaseDcNpPlugin
                     DiscordRpc.UpdatePresence(_presence);
                     Console.WriteLine(now);
                 }
-
             }
-
 
         }
 
-        private static int GetNetEaseProcessId()
+        private static string GetNetEaseNowPlaying()
         {
-            Process[] processes = Process.GetProcessesByName("cloudmusic");
-            int pid = 0;
+            string text = "";
 
-            foreach (var process in processes)
+            Native.EnumWindows(delegate (IntPtr hWnd, int lParam)
             {
-                if (string.IsNullOrWhiteSpace(process.StartInfo.Arguments))
-                {
-                    pid = process.Id;
-                }
-            }
+                StringBuilder str = new StringBuilder(256);
+                Native.GetClassName(hWnd, str, 256);
 
-            return pid;
+                if (str.ToString() == "OrpheusBrowserHost")
+                {
+                    int length = Native.GetWindowTextLength(hWnd);
+                    StringBuilder builder = new StringBuilder(length);
+                    Native.GetWindowText(hWnd, builder, length + 1);
+                    text = builder.ToString();
+                }
+
+                return true;
+
+            }, IntPtr.Zero);
+
+            return text;
         }
 
-        private static string GetNetEaseNowPlaying(int pid)
-        {
-            StringBuilder text = new StringBuilder(256);
-
-            if (pid != 0)
-            {
-                IntPtr hwnd = Native.GetNetEaseWindowText(pid);
-                if (hwnd != IntPtr.Zero)
-                {
-                    Native.GetWindowTextW(hwnd, text, Native.GetWindowTextLength(hwnd) + 1);
-                }
-            }
-
-            return text.ToString();
-        }
 
         private static void ErrorCallback(int errorCode, string message)
         {

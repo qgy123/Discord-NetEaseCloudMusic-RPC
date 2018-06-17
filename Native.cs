@@ -9,57 +9,18 @@ namespace NetEaseDcNpPlugin
 {
     public class Native
     {
-        public static IntPtr GetNetEaseWindowText(int processId)
-        {
-            IntPtr mainWindowHandle = IntPtr.Zero;
+        public delegate bool EnumWindowsProc(IntPtr hWnd, int lParam);
 
-            EnumWindows((hWnd, lParam) =>
-            {
-                GetWindowThreadProcessId(hWnd, out var pid);
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+        public static extern int GetWindowText(IntPtr hWnd, StringBuilder strText, int maxCount);
 
-                if (pid == lParam)
-                {
-                    StringBuilder str = new StringBuilder(256);
-                    GetClassName(hWnd, str, 256);
-
-                    if (str.ToString() == "OrpheusBrowserHost")
-                    {
-                        mainWindowHandle = hWnd;
-                        return false;
-                    }
-                }
-
-                return true;
-
-            }, new IntPtr(processId));
-
-            return mainWindowHandle;
-        }
-
-        internal const uint GW_OWNER = 4;
-
-        private delegate bool EnumWindowsProc(IntPtr hWnd, IntPtr lParam);
-
-        [DllImport("User32.dll", CharSet = CharSet.Auto)]
-        private static extern bool EnumWindows(EnumWindowsProc lpEnumFunc, IntPtr lParam);
-
-        [DllImport("User32.dll", CharSet = CharSet.Auto)]
-        private static extern int GetWindowThreadProcessId(IntPtr hWnd, out IntPtr lpdwProcessId);
-
-        [DllImport("User32.dll", CharSet = CharSet.Auto)]
-        private static extern IntPtr GetWindow(IntPtr hWnd, uint uCmd);
-
-        [DllImport("User32.Dll")]
-        private static extern void GetClassName(IntPtr hwnd, StringBuilder s, int nMaxCount);
-
-        [DllImport("User32.dll", CharSet = CharSet.Auto)]
-        private static extern bool IsWindowVisible(IntPtr hWnd);
-
-        [DllImport("user32.dll", CharSet = CharSet.Auto)]
-        public static extern int GetWindowTextW(IntPtr hwnd, StringBuilder text, int maxLength);
-
-        [DllImport("user32.dll")]
+        [DllImport("user32.dll", CharSet = CharSet.Unicode)]
         public static extern int GetWindowTextLength(IntPtr hWnd);
 
+        [DllImport("user32.dll")]
+        public static extern bool EnumWindows(EnumWindowsProc enumProc, IntPtr lParam);
+
+        [DllImport("User32.Dll")]
+        public static extern void GetClassName(IntPtr hwnd, StringBuilder s, int nMaxCount);
     }
 }
